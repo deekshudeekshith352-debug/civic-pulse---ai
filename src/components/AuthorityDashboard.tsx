@@ -147,7 +147,7 @@ export const AuthorityDashboard: React.FC<Props> = ({
             <CheckCircle2 className="w-4 h-4 text-emerald-400" />
           </div>
           <div className="text-2xl font-black text-emerald-400 mt-1">{resolvedCount}</div>
-          <div className="text-[11px] text-slate-500 mt-0.5">{((resolvedCount / totalCount) * 100).toFixed(0)}% resolution rate</div>
+          <div className="text-[11px] text-slate-500 mt-0.5">{totalCount > 0 ? ((resolvedCount / totalCount) * 100).toFixed(0) : '0'}% resolution rate</div>
         </div>
 
         <div className="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
@@ -155,7 +155,7 @@ export const AuthorityDashboard: React.FC<Props> = ({
             <span>Avg Turnaround SLA</span>
             <Clock className="w-4 h-4 text-amber-400" />
           </div>
-          <div className="text-2xl font-black text-white mt-1">{avgResolutionHours}h</div>
+          <div className="text-2xl font-black text-white mt-1">{totalCount > 0 ? `${avgResolutionHours}h` : '0h'}</div>
           <div className="text-[11px] text-emerald-400 mt-0.5">↓ 22% faster via AI routing</div>
         </div>
       </div>
@@ -171,12 +171,18 @@ export const AuthorityDashboard: React.FC<Props> = ({
               AI Predictive Municipal Insight
             </span>
             <span className="px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-bold">
-              High Confidence (89%)
+              {issues.length > 0 ? 'High Confidence (89%)' : 'Telemetry Active'}
             </span>
           </div>
-          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
-            <strong>Ward 12 & Ward 56</strong> show a 3.4x spike in stormwater drainage reports over the past 48 hours. Historical meteorological telemetry indicates monsoon pre-showers in 4 days. <em>Recommendation: Preemptively deploy excavator desilting unit to 100 Feet Rd culvert to avert street flash flooding.</em>
-          </p>
+          {issues.length > 0 ? (
+            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+              <strong>Ward 12 & Ward 56</strong> show a 3.4x spike in stormwater drainage reports over the past 48 hours. Historical meteorological telemetry indicates monsoon pre-showers in 4 days. <em>Recommendation: Preemptively deploy excavator desilting unit to 100 Feet Rd culvert to avert street flash flooding.</em>
+            </p>
+          ) : (
+            <p className="text-xs sm:text-sm text-slate-200 leading-relaxed">
+              Automated municipal telemetry is active across Bengaluru wards. Real-time predictive anomaly detection and spatial clustering activate dynamically as citizens submit hazard reports.
+            </p>
+          )}
         </div>
       </div>
 
@@ -259,171 +265,209 @@ export const AuthorityDashboard: React.FC<Props> = ({
       {/* 1. AI Priority Queue View */}
       {viewMode === 'queue' && (
         <div className="space-y-3">
-          <div className="text-xs text-slate-400 flex items-center justify-between px-1">
-            <span>Displaying {sorted.length} prioritized reports</span>
-            <span className="font-semibold text-sky-400">Formula: Severity + Upvotes + Critical Location + Wait Time</span>
-          </div>
+          {sorted.length === 0 ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 sm:p-14 text-center space-y-3 shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+              </div>
+              <h3 className="text-base font-bold text-white">
+                No civic issues reported yet. Be the first to report an issue.
+              </h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                All municipal dispatch queues are currently clear. User-submitted reports will appear here in real-time.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="text-xs text-slate-400 flex items-center justify-between px-1">
+                <span>Displaying {sorted.length} prioritized reports</span>
+                <span className="font-semibold text-sky-400">Formula: Severity + Upvotes + Critical Location + Wait Time</span>
+              </div>
 
-          <div className="space-y-2.5">
-            {sorted.map((item, idx) => {
-              const priority = getPriorityScore(item);
-              const deadline = new Date(item.slaDeadline);
-              const hoursLeft = Math.round((deadline.getTime() - Date.now()) / (1000 * 60 * 60));
-              const isOverdue = hoursLeft < 0 && item.status !== 'Resolved';
+              <div className="space-y-2.5">
+                {sorted.map((item, idx) => {
+                  const priority = getPriorityScore(item);
+                  const deadline = new Date(item.slaDeadline);
+                  const hoursLeft = Math.round((deadline.getTime() - Date.now()) / (1000 * 60 * 60));
+                  const isOverdue = hoursLeft < 0 && item.status !== 'Resolved';
 
-              return (
-                <div
-                  key={item.id}
-                  className="bg-slate-900 border border-slate-800 hover:border-slate-700 p-4 rounded-2xl transition shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
-                >
-                  {/* Left priority rank badge & photo */}
-                  <div className="flex items-start gap-3">
-                    <div className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 shrink-0">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase">Rank</span>
-                      <span className="text-sm font-black text-white">#{idx + 1}</span>
-                    </div>
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-slate-900 border border-slate-800 hover:border-slate-700 p-4 rounded-2xl transition shadow-md flex flex-col sm:flex-row sm:items-center justify-between gap-3 group"
+                    >
+                      {/* Left priority rank badge & photo */}
+                      <div className="flex items-start gap-3">
+                        <div className="flex flex-col items-center justify-center w-12 h-12 rounded-2xl bg-slate-800 border border-slate-700 shrink-0">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Rank</span>
+                          <span className="text-sm font-black text-white">#{idx + 1}</span>
+                        </div>
 
-                    <img
-                      src={item.images[0]}
-                      alt={item.title}
-                      className="w-14 h-14 rounded-xl object-cover shrink-0 cursor-pointer"
-                      onClick={() => onSelectIssue(item)}
-                    />
+                        <img
+                          src={item.images[0]}
+                          alt={item.title}
+                          className="w-14 h-14 rounded-xl object-cover shrink-0 cursor-pointer"
+                          onClick={() => onSelectIssue(item)}
+                        />
 
-                    <div className="space-y-1">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="font-mono text-xs font-bold text-sky-400">#{item.id}</span>
-                        <span className="text-[11px] font-semibold px-2 py-0.2 rounded-full bg-slate-800 text-slate-300">
-                          {item.category}
-                        </span>
-                        {item.isEmergency && (
-                          <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse">
-                            EMERGENCY
-                          </span>
-                        )}
-                        <span className="text-[11px] font-bold text-slate-400">
-                          Ward: {item.ward}
-                        </span>
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="font-mono text-xs font-bold text-sky-400">#{item.id}</span>
+                            <span className="text-[11px] font-semibold px-2 py-0.2 rounded-full bg-slate-800 text-slate-300">
+                              {item.category}
+                            </span>
+                            {item.isEmergency && (
+                              <span className="text-[10px] font-black px-1.5 py-0.2 rounded bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse">
+                                EMERGENCY
+                              </span>
+                            )}
+                            <span className="text-[11px] font-bold text-slate-400">
+                              Ward: {item.ward}
+                            </span>
+                          </div>
+
+                          <h4
+                            onClick={() => onSelectIssue(item)}
+                            className="text-xs sm:text-sm font-bold text-white hover:text-sky-400 transition cursor-pointer line-clamp-1"
+                          >
+                            {item.title}
+                          </h4>
+
+                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
+                            <span>Dept: <strong className="text-slate-300">{item.department}</strong></span>
+                            <span>Severity: <strong className={item.severity >= 8 ? 'text-rose-400' : 'text-amber-400'}>{item.severity}/10</strong></span>
+                            <span>Upvotes: <strong>{item.upvotes}</strong></span>
+                          </div>
+                        </div>
                       </div>
 
-                      <h4
-                        onClick={() => onSelectIssue(item)}
-                        className="text-xs sm:text-sm font-bold text-white hover:text-sky-400 transition cursor-pointer line-clamp-1"
-                      >
-                        {item.title}
-                      </h4>
+                      {/* Right actions: SLA, Team assignment, Status change */}
+                      <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
+                        <div className="text-right">
+                          <div className="text-[10px] text-slate-400">Priority Score</div>
+                          <div className="text-base font-black text-sky-400">{priority}</div>
+                        </div>
 
-                      <div className="flex flex-wrap items-center gap-3 text-[11px] text-slate-400">
-                        <span>Dept: <strong className="text-slate-300">{item.department}</strong></span>
-                        <span>Severity: <strong className={item.severity >= 8 ? 'text-rose-400' : 'text-amber-400'}>{item.severity}/10</strong></span>
-                        <span>Upvotes: <strong>{item.upvotes}</strong></span>
+                        {/* Team assign selector */}
+                        <select
+                          value={item.assignedTeam || ''}
+                          onChange={(e) => onAssignTeam(item.id, e.target.value)}
+                          className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-xl max-w-[150px]"
+                        >
+                          <option value="">Assign Crew...</option>
+                          {teamsList.map((t) => (
+                            <option key={t} value={t}>{t}</option>
+                          ))}
+                        </select>
+
+                        {/* Status updater */}
+                        <select
+                          value={item.status}
+                          onChange={(e) => onUpdateStatus(item.id, e.target.value as IssueStatus)}
+                          className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none ${
+                            item.status === 'Resolved'
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                              : item.status === 'In Progress'
+                              ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                              : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
+                          }`}
+                        >
+                          <option value="Submitted">Submitted</option>
+                          <option value="Verified">Verified</option>
+                          <option value="Assigned">Assigned</option>
+                          <option value="In Progress">In Progress</option>
+                          <option value="Resolved">Resolved</option>
+                        </select>
+
+                        <button
+                          onClick={() => onSelectIssue(item)}
+                          className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                  </div>
-
-                  {/* Right actions: SLA, Team assignment, Status change */}
-                  <div className="flex flex-wrap items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-800">
-                    <div className="text-right">
-                      <div className="text-[10px] text-slate-400">Priority Score</div>
-                      <div className="text-base font-black text-sky-400">{priority}</div>
-                    </div>
-
-                    {/* Team assign selector */}
-                    <select
-                      value={item.assignedTeam || ''}
-                      onChange={(e) => onAssignTeam(item.id, e.target.value)}
-                      className="bg-slate-800 border border-slate-700 text-slate-200 text-xs px-2.5 py-1.5 rounded-xl max-w-[150px]"
-                    >
-                      <option value="">Assign Crew...</option>
-                      {teamsList.map((t) => (
-                        <option key={t} value={t}>{t}</option>
-                      ))}
-                    </select>
-
-                    {/* Status updater */}
-                    <select
-                      value={item.status}
-                      onChange={(e) => onUpdateStatus(item.id, e.target.value as IssueStatus)}
-                      className={`text-xs font-bold px-3 py-1.5 rounded-xl border focus:outline-none ${
-                        item.status === 'Resolved'
-                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
-                          : item.status === 'In Progress'
-                          ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
-                          : 'bg-sky-500/20 text-sky-400 border-sky-500/30'
-                      }`}
-                    >
-                      <option value="Submitted">Submitted</option>
-                      <option value="Verified">Verified</option>
-                      <option value="Assigned">Assigned</option>
-                      <option value="In Progress">In Progress</option>
-                      <option value="Resolved">Resolved</option>
-                    </select>
-
-                    <button
-                      onClick={() => onSelectIssue(item)}
-                      className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
       )}
 
       {/* 2. Kanban Board View */}
       {viewMode === 'kanban' && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-          {(['Submitted', 'Verified', 'Assigned', 'In Progress', 'Resolved'] as IssueStatus[]).map((st) => {
-            const colIssues = filtered.filter((i) => i.status === st);
-            return (
-              <div key={st} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col h-[650px]">
-                <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
-                  <div className="flex items-center gap-2">
-                    <span className="font-extrabold text-xs text-white">{st}</span>
-                    <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
-                      {colIssues.length}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
-                  {colIssues.map((issue) => (
-                    <div
-                      key={issue.id}
-                      onClick={() => onSelectIssue(issue)}
-                      className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 hover:border-sky-500 transition shadow-sm cursor-pointer space-y-2 group"
-                    >
-                      <div className="flex items-center justify-between text-[10px]">
-                        <span className="font-mono font-bold text-sky-400">#{issue.id}</span>
-                        <span className={`font-bold px-1.5 py-0.2 rounded ${
-                          issue.severity >= 8 ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-700 text-slate-300'
-                        }`}>
-                          Sev: {issue.severity}
+        <>
+          {filtered.length === 0 ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 sm:p-14 text-center space-y-3 shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mx-auto text-slate-400">
+                <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+              </div>
+              <h3 className="text-base font-bold text-white">
+                No civic issues reported yet. Be the first to report an issue.
+              </h3>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Work orders across Submitted, Verified, Assigned, In Progress, and Resolved stages will populate here as citizens report issues.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+              {(['Submitted', 'Verified', 'Assigned', 'In Progress', 'Resolved'] as IssueStatus[]).map((st) => {
+                const colIssues = filtered.filter((i) => i.status === st);
+                return (
+                  <div key={st} className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 flex flex-col h-[650px]">
+                    <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-3">
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-xs text-white">{st}</span>
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300">
+                          {colIssues.length}
                         </span>
                       </div>
-
-                      <h5 className="font-bold text-xs text-slate-100 group-hover:text-sky-300 transition line-clamp-2">
-                        {issue.title}
-                      </h5>
-
-                      <div className="text-[10px] text-slate-400">
-                        {issue.ward} • {issue.category}
-                      </div>
-
-                      <div className="pt-2 border-t border-slate-700/50 flex items-center justify-between text-[10px] text-slate-400">
-                        <span>{issue.assignedTeam ? issue.assignedTeam.split(' ')[0] : 'Unassigned'}</span>
-                        <span className="font-bold text-sky-400">Score {getPriorityScore(issue)}</span>
-                      </div>
                     </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+
+                    <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+                      {colIssues.length === 0 ? (
+                        <div className="h-32 flex items-center justify-center text-[11px] text-slate-500 italic">
+                          No issues in this stage
+                        </div>
+                      ) : (
+                        colIssues.map((issue) => (
+                          <div
+                            key={issue.id}
+                            onClick={() => onSelectIssue(issue)}
+                            className="p-3 rounded-xl bg-slate-800/80 border border-slate-700/60 hover:border-sky-500 transition shadow-sm cursor-pointer space-y-2 group"
+                          >
+                            <div className="flex items-center justify-between text-[10px]">
+                              <span className="font-mono font-bold text-sky-400">#{issue.id}</span>
+                              <span className={`font-bold px-1.5 py-0.2 rounded ${
+                                issue.severity >= 8 ? 'bg-rose-500/20 text-rose-400' : 'bg-slate-700 text-slate-300'
+                              }`}>
+                                Sev: {issue.severity}
+                              </span>
+                            </div>
+
+                            <h5 className="font-bold text-xs text-slate-100 group-hover:text-sky-300 transition line-clamp-2">
+                              {issue.title}
+                            </h5>
+
+                            <div className="text-[10px] text-slate-400">
+                              {issue.ward} • {issue.category}
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-700/50 flex items-center justify-between text-[10px] text-slate-400">
+                              <span>{issue.assignedTeam ? issue.assignedTeam.split(' ')[0] : 'Unassigned'}</span>
+                              <span className="font-bold text-sky-400">Score {getPriorityScore(issue)}</span>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
 
       {/* 3. Analytics & Predictive Hotspots View */}

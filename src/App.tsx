@@ -56,13 +56,21 @@ export default function App() {
   // Accessibility large text mode
   const [largeText, setLargeText] = useState(false);
 
-  // Issues state (hydrated from localStorage or default 65 seed reports)
+  // Issues state: show ONLY reports submitted by users (no hardcoded preloaded seed reports or fake sample complaints)
   const [issues, setIssues] = useState<CivicIssue[]>(() => {
     try {
-      const stored = localStorage.getItem('civic_pulse_issues_v2');
-      if (stored) return JSON.parse(stored);
+      // Clear legacy sample seed reports from localStorage
+      localStorage.removeItem('civic_pulse_issues_v2');
+      const stored = localStorage.getItem('civic_pulse_user_reports_v3');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          // Strip any seed reports (which had IDs starting with 'CP-10' or 'CP-1')
+          return parsed.filter((i: CivicIssue) => !i.id?.startsWith('CP-10') && !i.id?.startsWith('CP-1'));
+        }
+      }
     } catch {}
-    return getInitialSeedReports();
+    return [];
   });
 
   // User profile & gamification
@@ -74,17 +82,14 @@ export default function App() {
       state: 'Karnataka',
       ward: 'Ward 12 (Indiranagar)',
       whatsappOptIn: true,
-      points: 840,
-      streakDays: 14,
+      points: 150,
+      streakDays: 3,
       badges: [
-        { id: 'b1', name: 'First Responder', icon: '🚨', description: 'Reported 5+ verified road hazards', unlockedAt: '2026-10-10' },
-        { id: 'b2', name: 'Pothole Patrol', icon: '🛣️', description: '10+ asphalt defects verified and closed', unlockedAt: '2026-10-15' },
-        { id: 'b3', name: 'Green Guardian', icon: '🌱', description: 'Reported unauthorized waste dumps', unlockedAt: '2026-10-18' },
-        { id: 'b4', name: 'Civic Champion', icon: '🏆', description: 'Top 5% contributor in Indiranagar Ward 12', unlockedAt: '2026-10-21' },
+        { id: 'b1', name: 'Citizen Watch', icon: '🚨', description: 'Active citizen responder', unlockedAt: '2026-10-20' },
       ],
-      reportsSubmitted: 18,
-      reportsResolved: 14,
-      upvotesGiven: 42,
+      reportsSubmitted: 0,
+      reportsResolved: 0,
+      upvotesGiven: 0,
       isAnonymous: false,
     };
   });
@@ -94,7 +99,7 @@ export default function App() {
   const [selectedIssue, setSelectedIssue] = useState<CivicIssue | null>(null);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isDemoRunnerOpen, setIsDemoRunnerOpen] = useState(false);
-  const [dismissDemoBanner, setDismissDemoBanner] = useState(false);
+  const [dismissDemoBanner, setDismissDemoBanner] = useState(true);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,7 +130,7 @@ export default function App() {
   // Save to localStorage when issues update
   useEffect(() => {
     try {
-      localStorage.setItem('civic_pulse_issues_v2', JSON.stringify(issues));
+      localStorage.setItem('civic_pulse_user_reports_v3', JSON.stringify(issues));
     } catch {}
   }, [issues]);
 
@@ -690,7 +695,7 @@ export default function App() {
                 <MapPin className="w-4 h-4 text-emerald-400" />
                 <span>Bengaluru Spatial View:</span>
                 <span className="text-[11px] text-slate-400 font-normal hidden sm:inline">
-                  (Explore 65 verified defects across wards)
+                  ({issues.length} reported defects across wards)
                 </span>
               </div>
 
@@ -801,130 +806,154 @@ export default function App() {
                   )}
                 </div>
 
-                {/* Issues Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {feedIssues.map((issue) => (
-                    <div
-                      key={issue.id}
-                      onClick={() => setSelectedIssue(issue)}
-                      className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-3xl p-4 shadow-lg hover:shadow-xl transition cursor-pointer flex flex-col justify-between group space-y-3"
+                {/* Issues Cards Grid or Clean Empty State */}
+                {feedIssues.length === 0 ? (
+                  <div className="bg-slate-900/90 border border-slate-800 rounded-3xl p-10 sm:p-14 text-center flex flex-col items-center justify-center space-y-4 shadow-xl">
+                    <div className="w-16 h-16 rounded-3xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400">
+                      <MapPin className="w-8 h-8" />
+                    </div>
+                    <div className="space-y-1.5 max-w-md">
+                      <h3 className="text-base sm:text-lg font-bold text-white">
+                        No civic issues reported yet. Be the first to report an issue.
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Spot a road defect, broken street light, garbage heap, or water leakage in your ward? Snap a photo with GPS to alert municipal teams.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsReportFlowOpen(true)}
+                      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-sky-500/30 transition active:scale-95 cursor-pointer flex items-center gap-2"
                     >
-                      <div className="space-y-3">
-                        {/* Top Meta info */}
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-bold text-sky-400">#{issue.id}</span>
-                            <span className="text-[11px] font-semibold px-2 py-0.2 rounded-full bg-slate-800 text-slate-300">
-                              {issue.category}
-                            </span>
-                          </div>
-                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                            issue.status === 'Resolved'
-                              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                              : issue.status === 'In Progress'
-                              ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
-                              : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
-                          }`}>
-                            {issue.status}
-                          </span>
-                        </div>
-
-                        {/* Image with severity overlay */}
-                        <div className="relative rounded-2xl overflow-hidden aspect-video bg-slate-800">
-                          <img
-                            src={issue.images[0]}
-                            alt={issue.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
-                          />
-                          <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5">
-                            <MapPin className="w-3 h-3 text-sky-400" />
-                            <span>{issue.ward}</span>
-                            <span className="text-slate-500">•</span>
-                            <span className="text-emerald-300 font-mono flex items-center gap-0.5">
-                              <Navigation className="w-2.5 h-2.5" />
-                              {formatDistance(calculateDistanceMeters(userLat, userLng, issue.lat, issue.lng))}
+                      <Camera className="w-4 h-4" />
+                      <span>Report Issue</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {feedIssues.map((issue) => (
+                      <div
+                        key={issue.id}
+                        onClick={() => setSelectedIssue(issue)}
+                        className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-3xl p-4 shadow-lg hover:shadow-xl transition cursor-pointer flex flex-col justify-between group space-y-3"
+                      >
+                        <div className="space-y-3">
+                          {/* Top Meta info */}
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-sky-400">#{issue.id}</span>
+                              <span className="text-[11px] font-semibold px-2 py-0.2 rounded-full bg-slate-800 text-slate-300">
+                                {issue.category}
+                              </span>
+                            </div>
+                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                              issue.status === 'Resolved'
+                                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                : issue.status === 'In Progress'
+                                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                                : 'bg-sky-500/20 text-sky-400 border border-sky-500/30'
+                            }`}>
+                              {issue.status}
                             </span>
                           </div>
 
-                          <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-lg text-[10px] font-black ${
-                            issue.severity >= 8 ? 'bg-rose-500 text-white' : 'bg-slate-900/80 text-amber-400'
-                          }`}>
-                            Severity: {issue.severity}/10
+                          {/* Image with severity overlay */}
+                          <div className="relative rounded-2xl overflow-hidden aspect-video bg-slate-800">
+                            <img
+                              src={issue.images[0]}
+                              alt={issue.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+                            />
+                            <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-md px-2 py-0.5 rounded-lg text-[10px] font-bold text-white flex items-center gap-1.5">
+                              <MapPin className="w-3 h-3 text-sky-400" />
+                              <span>{issue.ward}</span>
+                              <span className="text-slate-500">•</span>
+                              <span className="text-emerald-300 font-mono flex items-center gap-0.5">
+                                <Navigation className="w-2.5 h-2.5" />
+                                {formatDistance(calculateDistanceMeters(userLat, userLng, issue.lat, issue.lng))}
+                              </span>
+                            </div>
+
+                            <div className={`absolute top-2 right-2 px-2 py-0.5 rounded-lg text-[10px] font-black ${
+                              issue.severity >= 8 ? 'bg-rose-500 text-white' : 'bg-slate-900/80 text-amber-400'
+                            }`}>
+                              Severity: {issue.severity}/10
+                            </div>
+
+                            {issue.isEmergency && (
+                              <div className="absolute bottom-2 left-2 bg-rose-600/90 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 animate-pulse">
+                                <AlertTriangle className="w-3 h-3" />
+                                <span>EMERGENCY HAZARD</span>
+                              </div>
+                            )}
+
+                            {issue.status === 'Resolved' && (
+                              <div className="absolute bottom-2 right-2 bg-emerald-600/90 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>AI VERIFIED FIX</span>
+                              </div>
+                            )}
                           </div>
 
-                          {issue.isEmergency && (
-                            <div className="absolute bottom-2 left-2 bg-rose-600/90 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1 animate-pulse">
-                              <AlertTriangle className="w-3 h-3" />
-                              <span>EMERGENCY HAZARD</span>
+                          {/* Title and Address */}
+                          <div className="space-y-1">
+                            <h3 className="font-bold text-sm text-white group-hover:text-sky-400 transition line-clamp-1">
+                              {issue.title}
+                            </h3>
+                            <p className="text-xs text-slate-400 line-clamp-2">
+                              {issue.description}
+                            </p>
+
+                            <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400">
+                              <span className="font-semibold text-sky-400">Agency: {issue.nodalAgency || 'BBMP'}</span>
+                              <span className="font-bold text-emerald-400">₹{(issue.estimatedCostINR || 4500).toLocaleString('en-IN')}</span>
                             </div>
-                          )}
-
-                          {issue.status === 'Resolved' && (
-                            <div className="absolute bottom-2 right-2 bg-emerald-600/90 text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" />
-                              <span>AI VERIFIED FIX</span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Title and Address */}
-                        <div className="space-y-1">
-                          <h3 className="font-bold text-sm text-white group-hover:text-sky-400 transition line-clamp-1">
-                            {issue.title}
-                          </h3>
-                          <p className="text-xs text-slate-400 line-clamp-2">
-                            {issue.description}
-                          </p>
-
-                          <div className="flex items-center justify-between text-[11px] pt-1 text-slate-400">
-                            <span className="font-semibold text-sky-400">Agency: {issue.nodalAgency || 'BBMP'}</span>
-                            <span className="font-bold text-emerald-400">₹{(issue.estimatedCostINR || 4500).toLocaleString('en-IN')}</span>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Card Footer: Upvote, SLA & Locate on Map */}
-                      <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleUpvote(issue.id);
-                          }}
-                          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
-                            issue.upvotedByMe
-                              ? 'bg-sky-500 text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                          }`}
-                        >
-                          <ThumbsUp className={`w-3.5 h-3.5 ${issue.upvotedByMe ? 'fill-current' : ''}`} />
-                          <span>{issue.upvotes}</span>
-                        </button>
-
-                        <div className="flex items-center gap-3">
+                        {/* Card Footer: Upvote, SLA & Locate on Map */}
+                        <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400">
                           <button
-                            type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              setFocusedIssueId(issue.id);
-                              setShowEmbeddedMap(true);
-                              window.scrollTo({ top: 350, behavior: 'smooth' });
+                              handleUpvote(issue.id);
                             }}
-                            className="text-[11px] font-semibold text-sky-400 hover:text-sky-300 flex items-center gap-1"
-                            title="Focus on Bengaluru Map"
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold transition cursor-pointer ${
+                              issue.upvotedByMe
+                                ? 'bg-sky-500 text-white'
+                                : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                            }`}
                           >
-                            <MapPin className="w-3 h-3" />
-                            <span>Locate</span>
+                            <ThumbsUp className={`w-3.5 h-3.5 ${issue.upvotedByMe ? 'fill-current' : ''}`} />
+                            <span>{issue.upvotes}</span>
                           </button>
 
-                          <div className="flex items-center gap-1 text-[11px] text-slate-500">
-                            <Clock className="w-3.5 h-3.5" />
-                            <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFocusedIssueId(issue.id);
+                                setShowEmbeddedMap(true);
+                                window.scrollTo({ top: 350, behavior: 'smooth' });
+                              }}
+                              className="text-[11px] font-semibold text-sky-400 hover:text-sky-300 flex items-center gap-1"
+                              title="Focus on Bengaluru Map"
+                            >
+                              <MapPin className="w-3 h-3" />
+                              <span>Locate</span>
+                            </button>
+
+                            <div className="flex items-center gap-1 text-[11px] text-slate-500">
+                              <Clock className="w-3.5 h-3.5" />
+                              <span>{new Date(issue.createdAt).toLocaleDateString()}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -944,38 +973,56 @@ export default function App() {
                 </div>
 
                 <div className="lg:col-span-5 space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                  {feedIssues.map((issue) => (
-                    <div
-                      key={issue.id}
-                      onClick={() => {
-                        setSelectedIssue(issue);
-                        setFocusedIssueId(issue.id);
-                      }}
-                      className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-3.5 shadow-md hover:shadow-lg transition cursor-pointer flex gap-3 group"
-                    >
-                      <img
-                        src={issue.images[0]}
-                        alt={issue.title}
-                        className="w-20 h-20 rounded-xl object-cover shrink-0"
-                      />
-                      <div className="space-y-1 min-w-0 flex-1">
-                        <div className="flex items-center justify-between text-[11px]">
-                          <span className="font-mono text-sky-400 font-bold">#{issue.id}</span>
-                          <span className="text-emerald-400 font-mono text-[10px] font-bold">
-                            {formatDistance(calculateDistanceMeters(userLat, userLng, issue.lat, issue.lng))}
-                          </span>
-                        </div>
-                        <h4 className="font-bold text-xs text-white truncate group-hover:text-sky-400">
-                          {issue.title}
-                        </h4>
-                        <p className="text-[11px] text-slate-400 truncate">{issue.address}</p>
-                        <div className="flex items-center justify-between text-[11px] pt-1">
-                          <span className="text-slate-300 font-medium">{issue.ward}</span>
-                          <span className="font-bold text-emerald-400">₹{(issue.estimatedCostINR || 4500).toLocaleString('en-IN')}</span>
+                  {feedIssues.length === 0 ? (
+                    <div className="bg-slate-900 border border-slate-800 rounded-3xl p-8 text-center space-y-3 shadow-lg">
+                      <div className="w-12 h-12 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-sky-400 mx-auto">
+                        <MapPin className="w-6 h-6" />
+                      </div>
+                      <p className="text-xs sm:text-sm font-bold text-slate-200">
+                        No civic issues reported yet. Be the first to report an issue.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setIsReportFlowOpen(true)}
+                        className="px-4 py-2 rounded-xl bg-sky-500 hover:bg-sky-400 text-white font-bold text-xs transition cursor-pointer"
+                      >
+                        Report Issue
+                      </button>
+                    </div>
+                  ) : (
+                    feedIssues.map((issue) => (
+                      <div
+                        key={issue.id}
+                        onClick={() => {
+                          setSelectedIssue(issue);
+                          setFocusedIssueId(issue.id);
+                        }}
+                        className="bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-2xl p-3.5 shadow-md hover:shadow-lg transition cursor-pointer flex gap-3 group"
+                      >
+                        <img
+                          src={issue.images[0]}
+                          alt={issue.title}
+                          className="w-20 h-20 rounded-xl object-cover shrink-0"
+                        />
+                        <div className="space-y-1 min-w-0 flex-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-mono text-sky-400 font-bold">#{issue.id}</span>
+                            <span className="text-emerald-400 font-mono text-[10px] font-bold">
+                              {formatDistance(calculateDistanceMeters(userLat, userLng, issue.lat, issue.lng))}
+                            </span>
+                          </div>
+                          <h4 className="font-bold text-xs text-white truncate group-hover:text-sky-400">
+                            {issue.title}
+                          </h4>
+                          <p className="text-[11px] text-slate-400 truncate">{issue.address}</p>
+                          <div className="flex items-center justify-between text-[11px] pt-1">
+                            <span className="text-slate-300 font-medium">{issue.ward}</span>
+                            <span className="font-bold text-emerald-400">₹{(issue.estimatedCostINR || 4500).toLocaleString('en-IN')}</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
