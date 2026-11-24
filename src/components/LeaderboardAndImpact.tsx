@@ -33,13 +33,13 @@ export const LeaderboardAndImpact: React.FC<Props> = ({ userProfile }) => {
   ];
 
   const handleShareCard = () => {
-    navigator.clipboard.writeText(`I've earned ${userProfile.points} Swachh Civic Points on Civic Pulse India helping resolve ${userProfile.reportsResolved} civic issues in Ward 12 Indiranagar, BBMP Bengaluru!`);
+    navigator.clipboard.writeText(`I've earned ${userProfile.points} Swachh Civic Points on Praja Voice AI helping resolve ${userProfile.reportsResolved} civic issues in Ward 12 Indiranagar, BBMP Bengaluru!`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
 
   const shareViaWhatsApp = () => {
-    const text = encodeURIComponent(`🏛️ *Civic Pulse India - Citizen Impact Passport*\nI've earned *${userProfile.points} Swachh Points* and helped resolve *${userProfile.reportsResolved} civic issues* in Bengaluru Ward 12!\nCheck your neighborhood health score: ${window.location.origin}`);
+    const text = encodeURIComponent(`🏛️ *Praja Voice AI - Citizen Impact Passport*\nI've earned *${userProfile.points} Swachh Points* and helped resolve *${userProfile.reportsResolved} civic issues* in Bengaluru Ward 12!\nCheck your neighborhood health score: ${window.location.origin}`);
     window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
   };
 
@@ -192,10 +192,10 @@ export const LeaderboardAndImpact: React.FC<Props> = ({ userProfile }) => {
             <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-4">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-xl bg-sky-500 flex items-center justify-center font-black text-white text-xs">
-                  IN
+                  PV
                 </div>
                 <div>
-                  <h4 className="font-extrabold text-sm text-white">Civic Pulse India</h4>
+                  <h4 className="font-extrabold text-sm text-white">Praja Voice AI</h4>
                   <p className="text-[10px] text-sky-400 font-semibold">SWACHH CITIZEN PASSPORT</p>
                 </div>
               </div>
@@ -238,7 +238,7 @@ export const LeaderboardAndImpact: React.FC<Props> = ({ userProfile }) => {
 
             <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[10px] text-slate-400">
               <span>Ward Committee Verification</span>
-              <span className="font-mono">ID: #CP-IN-KA-8492</span>
+              <span className="font-mono">ID: #PV-IN-KA-8492</span>
             </div>
           </div>
 

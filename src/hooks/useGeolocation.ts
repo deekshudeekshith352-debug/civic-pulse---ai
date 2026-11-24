@@ -1,12 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface GeoLocationState {
   lat: number;
   lng: number;
   accuracy: number | null; // in meters
+  heading: number | null;
+  speed: number | null;
   loading: boolean;
+  isTracking: boolean;
+  isLiveFix: boolean;
   error: string | null;
   timestamp: number | null;
+  trail: [number, number][];
 }
 
 export function calculateDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -101,13 +106,111 @@ export async function reverseGeocodeCoords(lat: number, lng: number): Promise<{
 
 export function useGeolocation() {
   const [state, setState] = useState<GeoLocationState>({
-    lat: 12.9716, // Bengaluru Default Coordinates
+    lat: 12.9716, // Bengaluru Default Coordinates until live GPS fix arrives
     lng: 77.6412,
-    accuracy: 8,
+    accuracy: null,
+    heading: null,
+    speed: null,
     loading: false,
+    isTracking: false,
+    isLiveFix: false,
     error: null,
-    timestamp: Date.now(),
+    timestamp: null,
+    trail: [],
   });
+
+  const watchIdRef = useRef<number | null>(null);
+
+  const handlePositionUpdate = useCallback((position: GeolocationPosition) => {
+    const newLat = position.coords.latitude;
+    const newLng = position.coords.longitude;
+    const newAcc = Math.round(position.coords.accuracy);
+
+    setState((prev) => {
+      const lastPoint = prev.trail[prev.trail.length - 1];
+      const shouldAppend =
+        !lastPoint ||
+        calculateDistanceMeters(lastPoint[0], lastPoint[1], newLat, newLng) >= 3;
+
+      const updatedTrail = shouldAppend
+        ? [...prev.trail.slice(-49), [newLat, newLng] as [number, number]]
+        : prev.trail;
+
+      return {
+        ...prev,
+        lat: newLat,
+        lng: newLng,
+        accuracy: newAcc,
+        heading: position.coords.heading ?? prev.heading,
+        speed: position.coords.speed ?? prev.speed,
+        loading: false,
+        isLiveFix: true,
+        error: null,
+        timestamp: position.timestamp,
+        trail: updatedTrail,
+      };
+    });
+  }, []);
+
+  const handlePositionError = useCallback((error: GeolocationPositionError) => {
+    let errorMsg = 'Unable to retrieve GPS location';
+    if (error.code === error.PERMISSION_DENIED) {
+      errorMsg = 'GPS permission denied. Allow location access in browser settings.';
+    } else if (error.code === error.POSITION_UNAVAILABLE) {
+      errorMsg = 'GPS signal unavailable.';
+    } else if (error.code === error.TIMEOUT) {
+      errorMsg = 'GPS fix timed out. Retrying...';
+    }
+    setState((prev) => ({
+      ...prev,
+      loading: false,
+      error: errorMsg,
+    }));
+  }, []);
+
+  const stopTracking = useCallback(() => {
+    if (watchIdRef.current !== null && navigator.geolocation) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    setState((prev) => ({ ...prev, isTracking: false, loading: false }));
+  }, []);
+
+  const startTracking = useCallback(() => {
+    if (!navigator.geolocation) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Geolocation is not supported by your browser',
+        isTracking: false,
+      }));
+      return;
+    }
+
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+
+    setState((prev) => ({ ...prev, loading: true, isTracking: true, error: null }));
+
+    // Get immediate initial fix
+    navigator.geolocation.getCurrentPosition(handlePositionUpdate, handlePositionError, {
+      enableHighAccuracy: true,
+      timeout: 12000,
+      maximumAge: 0,
+    });
+
+    // Activate continuous watchPosition GPS tracing
+    watchIdRef.current = navigator.geolocation.watchPosition(
+      handlePositionUpdate,
+      handlePositionError,
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
+        maximumAge: 0,
+      }
+    );
+  }, [handlePositionUpdate, handlePositionError]);
 
   const requestLocation = useCallback(async (): Promise<{ lat: number; lng: number; accuracy: number } | null> => {
     if (!navigator.geolocation) {
@@ -120,50 +223,51 @@ export function useGeolocation() {
     return new Promise((resolve) => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          const loc = {
+          handlePositionUpdate(position);
+          resolve({
             lat: position.coords.latitude,
             lng: position.coords.longitude,
             accuracy: Math.round(position.coords.accuracy),
-            loading: false,
-            error: null,
-            timestamp: position.timestamp,
-          };
-          setState(loc);
-          resolve({ lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy });
+          });
         },
         (error) => {
-          let errorMsg = 'Unable to retrieve location';
-          if (error.code === error.PERMISSION_DENIED) {
-            errorMsg = 'GPS location permission denied. Using default Bengaluru city center.';
-          } else if (error.code === error.POSITION_UNAVAILABLE) {
-            errorMsg = 'GPS location unavailable.';
-          } else if (error.code === error.TIMEOUT) {
-            errorMsg = 'GPS request timed out.';
-          }
-          setState((prev) => ({
-            ...prev,
-            loading: false,
-            error: errorMsg,
-          }));
+          handlePositionError(error);
           resolve(null);
         },
         {
           enableHighAccuracy: true,
-          timeout: 10000,
+          timeout: 12000,
           maximumAge: 0,
         }
       );
     });
-  }, []);
+  }, [handlePositionUpdate, handlePositionError]);
+
+  const toggleTracking = useCallback(() => {
+    if (state.isTracking) {
+      stopTracking();
+    } else {
+      startTracking();
+    }
+  }, [state.isTracking, startTracking, stopTracking]);
 
   useEffect(() => {
-    // Attempt non-blocking location request on mount
-    requestLocation();
-  }, [requestLocation]);
+    // Activate continuous GPS tracing automatically on mount
+    startTracking();
+    return () => {
+      if (watchIdRef.current !== null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+        watchIdRef.current = null;
+      }
+    };
+  }, [startTracking]);
 
   return {
     ...state,
     requestLocation,
+    startTracking,
+    stopTracking,
+    toggleTracking,
     calculateDistance: calculateDistanceMeters,
     formatDistance,
     reverseGeocode: reverseGeocodeCoords,

@@ -10,6 +10,11 @@ interface Props {
   selectedStatus: string;
   onSelectIssue: (issue: CivicIssue) => void;
   userCoords?: { lat: number; lng: number } | null;
+  userAccuracy?: number | null;
+  isGpsTracking?: boolean;
+  isLiveGpsFix?: boolean;
+  gpsTrail?: [number, number][];
+  onActivateGPS?: () => void;
   focusedIssueId?: string | null;
   heightClass?: string;
 }
@@ -32,6 +37,11 @@ export const CityMapView: React.FC<Props> = ({
   selectedStatus,
   onSelectIssue,
   userCoords = { lat: 12.9716, lng: 77.6412 },
+  userAccuracy = null,
+  isGpsTracking = false,
+  isLiveGpsFix = false,
+  gpsTrail = [],
+  onActivateGPS,
   focusedIssueId,
   heightClass = 'min-h-[440px] h-[520px]',
 }) => {
@@ -41,10 +51,12 @@ export const CityMapView: React.FC<Props> = ({
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const heatLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.LayerGroup | null>(null);
+  const hasCenteredOnLiveFixRef = useRef(false);
 
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite' | 'dark'>('streets');
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [selectedWardName, setSelectedWardName] = useState<string | null>(null);
+  const [followGps, setFollowGps] = useState(true);
 
   // Filter issues
   const filteredIssues = issues.filter((item) => {
@@ -55,9 +67,9 @@ export const CityMapView: React.FC<Props> = ({
 
   // Base tile layer URLs
   const tileUrls = {
-    streets: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    streets: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    dark: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   };
 
   // Initialize Leaflet Map once
@@ -74,8 +86,9 @@ export const CityMapView: React.FC<Props> = ({
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     tileLayerRef.current = L.tileLayer(tileUrls[mapStyle], {
-      attribution: '&copy; OpenStreetMap, CartoDB, Esri',
+      attribution: '&copy; OpenStreetMap contributors, Esri',
       maxZoom: 19,
+      className: mapStyle === 'dark' ? 'invert hue-rotate-180 brightness-95 contrast-90' : '',
     }).addTo(map);
 
     markersLayerRef.current = L.layerGroup().addTo(map);
@@ -110,24 +123,50 @@ export const CityMapView: React.FC<Props> = ({
       map.removeLayer(tileLayerRef.current);
     }
     tileLayerRef.current = L.tileLayer(tileUrls[mapStyle], {
-      attribution: '&copy; OpenStreetMap, CartoDB, Esri',
+      attribution: '&copy; OpenStreetMap contributors, Esri',
       maxZoom: 19,
+      className: mapStyle === 'dark' ? 'invert hue-rotate-180 brightness-95 contrast-90' : '',
     }).addTo(map);
   }, [mapStyle]);
 
-  // Render User's live GPS pulse marker
+  // Render User's live GPS pulse marker, accuracy circle, and movement trail
   useEffect(() => {
+    const map = mapInstanceRef.current;
     const userGroup = userMarkerRef.current;
     if (!userGroup || !userCoords) return;
 
     userGroup.clearLayers();
 
+    // Draw GPS trace polyline if user has moved
+    if (gpsTrail.length > 1) {
+      const traceLine = L.polyline(gpsTrail, {
+        color: '#10b981',
+        weight: 4,
+        opacity: 0.85,
+        dashArray: '6, 6',
+      });
+      userGroup.addLayer(traceLine);
+    }
+
+    // Draw GPS accuracy radius circle when accuracy is known
+    if (userAccuracy && userAccuracy > 0) {
+      const accuracyCircle = L.circle([userCoords.lat, userCoords.lng], {
+        radius: Math.min(userAccuracy, 500),
+        color: '#0284c7',
+        weight: 1.5,
+        opacity: 0.5,
+        fillColor: '#38bdf8',
+        fillOpacity: 0.14,
+      });
+      userGroup.addLayer(accuracyCircle);
+    }
+
     const userPulseIcon = L.divIcon({
       className: 'user-gps-pulse-marker',
       html: `
         <div style="position: relative; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;">
-          <div style="position: absolute; width: 34px; height: 34px; border-radius: 9999px; background: rgba(56, 189, 248, 0.4); animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-          <div style="width: 18px; height: 18px; border-radius: 9999px; background: #0284c7; border: 3px solid #ffffff; box-shadow: 0 0 10px rgba(2, 132, 199, 0.7);"></div>
+          <div style="position: absolute; width: 34px; height: 34px; border-radius: 9999px; background: ${isLiveGpsFix ? 'rgba(16, 185, 129, 0.4)' : 'rgba(56, 189, 248, 0.4)'}; animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+          <div style="width: 18px; height: 18px; border-radius: 9999px; background: ${isLiveGpsFix ? '#10b981' : '#0284c7'}; border: 3px solid #ffffff; box-shadow: 0 0 10px rgba(2, 132, 199, 0.7);"></div>
         </div>
       `,
       iconSize: [28, 28],
@@ -135,12 +174,26 @@ export const CityMapView: React.FC<Props> = ({
     });
 
     const userMarker = L.marker([userCoords.lat, userCoords.lng], { icon: userPulseIcon });
+    const tooltipText = isLiveGpsFix
+      ? `📍 Live GPS Trace (${userCoords.lat.toFixed(5)}, ${userCoords.lng.toFixed(5)})${userAccuracy ? ` • ±${userAccuracy}m` : ''}`
+      : `📍 City Center (Tap "Trace GPS" to lock your location)`;
+
     userMarker.bindTooltip(
-      `<div style="font-weight: 700; color: #0284c7; font-size: 11px;">📍 Your Live Location (Bengaluru)</div>`,
+      `<div style="font-weight: 700; color: ${isLiveGpsFix ? '#059669' : '#0284c7'}; font-size: 11px;">${tooltipText}</div>`,
       { direction: 'top', offset: [0, -14] }
     );
     userGroup.addLayer(userMarker);
-  }, [userCoords]);
+
+    // Smoothly follow live GPS updates when followGps is enabled
+    if (map && isLiveGpsFix && followGps) {
+      if (!hasCenteredOnLiveFixRef.current) {
+        hasCenteredOnLiveFixRef.current = true;
+        map.flyTo([userCoords.lat, userCoords.lng], 15, { duration: 1.0 });
+      } else {
+        map.panTo([userCoords.lat, userCoords.lng], { animate: true, duration: 0.6 });
+      }
+    }
+  }, [userCoords, userAccuracy, isLiveGpsFix, gpsTrail, followGps]);
 
   // Update markers when filtered issues or heatmap changes
   useEffect(() => {
@@ -253,17 +306,23 @@ export const CityMapView: React.FC<Props> = ({
     });
   }, [filteredIssues, showHeatmap, focusedIssueId]);
 
-  // Center map on user location
+  // Activate live GPS tracing & center map on user location
   const handleLocateMe = () => {
+    setSelectedWardName(null);
+    setFollowGps(true);
+    if (onActivateGPS) {
+      onActivateGPS();
+    }
     const map = mapInstanceRef.current;
     if (!map || !userCoords) return;
-    map.flyTo([userCoords.lat, userCoords.lng], 15, { duration: 1.2 });
+    map.flyTo([userCoords.lat, userCoords.lng], 16, { duration: 1.1 });
   };
 
   // Fly to specific Bengaluru Ward
   const handleFlyToWard = (wardItem: typeof BENGALURU_WARDS[0]) => {
     const map = mapInstanceRef.current;
     if (!map) return;
+    setFollowGps(false);
     setSelectedWardName(wardItem.name);
     map.flyTo([wardItem.lat, wardItem.lng], wardItem.zoom, { duration: 1.4 });
   };
@@ -298,15 +357,21 @@ export const CityMapView: React.FC<Props> = ({
           ))}
         </div>
 
-        {/* Locate Me GPS Button */}
+        {/* Trace Live GPS Button */}
         <button
           type="button"
           onClick={handleLocateMe}
-          className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-slate-700/80 transition cursor-pointer shrink-0 flex items-center gap-1"
-          title="Center on My GPS Location"
+          className={`px-2.5 py-1.5 rounded-xl border transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+            isGpsTracking && followGps
+              ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40'
+              : 'bg-slate-800 hover:bg-slate-700 text-sky-400 border-slate-700/80'
+          }`}
+          title="Activate GPS and trace current location"
         >
-          <Crosshair className="w-3.5 h-3.5 animate-pulse" />
-          <span className="text-[10px] font-bold hidden md:inline">My GPS</span>
+          <Crosshair className={`w-3.5 h-3.5 ${isGpsTracking ? 'animate-pulse' : ''}`} />
+          <span className="text-[10px] font-bold">
+            {isLiveGpsFix ? (followGps ? 'Tracing GPS' : 'Center GPS') : 'Trace GPS'}
+          </span>
         </button>
       </div>
 
@@ -369,6 +434,18 @@ export const CityMapView: React.FC<Props> = ({
             <Layers className="w-3 h-3 text-sky-400" />
             <span>{filteredIssues.length} Pins</span>
           </div>
+
+          {/* Live GPS Trace Coordinate Badge */}
+          {userCoords && (
+            <div className="bg-slate-900/90 border border-slate-700/80 backdrop-blur-md px-2.5 py-1.5 rounded-xl text-[10px] font-mono font-bold text-slate-200 flex items-center gap-1.5 shadow-lg">
+              <span className={`w-2 h-2 rounded-full ${isLiveGpsFix ? 'bg-emerald-400 animate-ping' : 'bg-amber-400'}`}></span>
+              <span>
+                {isLiveGpsFix
+                  ? `${userCoords.lat.toFixed(4)}, ${userCoords.lng.toFixed(4)}${userAccuracy ? ` (±${userAccuracy}m)` : ''}`
+                  : 'Waiting for GPS'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Map Legend */}

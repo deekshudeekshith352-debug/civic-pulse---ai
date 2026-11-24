@@ -1,5 +1,5 @@
 /**
- * Civic Pulse AI - Database Seeder Script
+ * Praja Voice AI - Database Seeder Script
  * Seeds 60+ rich civic reports across wards into PostgreSQL / Supabase
  */
 import { getInitialSeedReports } from '../src/data/seedReports';
@@ -10,7 +10,7 @@ async function generateSeedSQL() {
   const reports = getInitialSeedReports();
   console.log(`Generating seed SQL for ${reports.length} realistic reports...`);
 
-  let sql = `-- Civic Pulse AI - Seed Data Dump (${reports.length} reports)\n\n`;
+  let sql = `-- Praja Voice AI - Seed Data Dump (${reports.length} reports)\n\n`;
 
   for (const r of reports) {
     const escapedTitle = r.title.replace(/'/g, "''");

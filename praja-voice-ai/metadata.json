@@ -1,0 +1,12 @@
+{
+  "name": "Civic Pulse AI",
+  "description": "Mobile-first civic intelligence PWA that uses AI to turn citizen photos into resolved civic issues with automated routing and verified fixes.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation",
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

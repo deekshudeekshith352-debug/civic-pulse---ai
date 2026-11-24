@@ -14,8 +14,8 @@ export default defineConfig(() => {
         includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'icon.svg'],
         manifest: {
           id: '/',
-          name: 'Civic Pulse AI',
-          short_name: 'CivicPulse',
+          name: 'Praja Voice AI',
+          short_name: 'PrajaVoice',
           description: 'AI-powered citizen reporting and civic issue resolution platform.',
           theme_color: '#0284c7',
           background_color: '#0f172a',

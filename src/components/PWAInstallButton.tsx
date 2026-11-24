@@ -20,7 +20,7 @@ export const PWAInstallButton: React.FC<Props> = ({ className = '', label = 'Ins
       <button
         onClick={install}
         className={`flex items-center gap-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 px-3.5 py-2 text-xs font-semibold text-white shadow-lg shadow-sky-500/25 hover:from-sky-400 hover:to-blue-500 transition active:scale-95 cursor-pointer ${className}`}
-        aria-label="Install Civic Pulse PWA"
+        aria-label="Install Praja Voice AI PWA"
       >
         <Download className="w-4 h-4 animate-bounce" />
         <span>{label}</span>
@@ -54,7 +54,7 @@ export const PWAInstallButton: React.FC<Props> = ({ className = '', label = 'Ins
                   <Smartphone className="w-6 h-6" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-base">Install Civic Pulse</h3>
+                  <h3 className="font-bold text-base">Install Praja Voice AI</h3>
                   <p className="text-xs text-slate-400">Add to iPhone / iPad Home Screen</p>
                 </div>
               </div>

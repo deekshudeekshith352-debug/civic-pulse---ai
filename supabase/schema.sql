@@ -1,5 +1,5 @@
 -- ==============================================================================
--- Civic Pulse AI - Supabase PostgreSQL Schema, Storage & Realtime Setup
+-- Praja Voice AI - Supabase PostgreSQL Schema, Storage & Realtime Setup
 -- ==============================================================================
 
 -- 1. Enable required PostgreSQL extensions

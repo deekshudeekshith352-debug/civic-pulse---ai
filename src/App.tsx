@@ -61,7 +61,9 @@ export default function App() {
     try {
       // Clear legacy sample seed reports from localStorage
       localStorage.removeItem('civic_pulse_issues_v2');
-      const stored = localStorage.getItem('civic_pulse_user_reports_v3');
+      const stored =
+        localStorage.getItem('praja_voice_user_reports_v1') ||
+        localStorage.getItem('civic_pulse_user_reports_v3');
       if (stored) {
         const parsed = JSON.parse(stored);
         if (Array.isArray(parsed)) {
@@ -107,13 +109,19 @@ export default function App() {
   const [statusFilter, setStatusFilter] = useState('All');
   const [emergencyOnly, setEmergencyOnly] = useState(false);
 
-  // Live GPS Location for Proximity Feed & Distance Sorting
+  // Live GPS Location for Proximity Feed, Map Tracing & Distance Sorting
   const {
     lat: userLat,
     lng: userLng,
     accuracy: userGpsAccuracy,
     loading: isGpsLocating,
-    requestLocation: refreshUserGPS
+    isTracking: isGpsTracking,
+    isLiveFix: isLiveGpsFix,
+    error: gpsError,
+    trail: gpsTrail,
+    requestLocation: refreshUserGPS,
+    startTracking: startGpsTracking,
+    toggleTracking: toggleGpsTracking,
   } = useGeolocation();
 
   // Sort mode for "Near Me" feed
@@ -130,7 +138,7 @@ export default function App() {
   // Save to localStorage when issues update
   useEffect(() => {
     try {
-      localStorage.setItem('civic_pulse_user_reports_v3', JSON.stringify(issues));
+      localStorage.setItem('praja_voice_user_reports_v1', JSON.stringify(issues));
     } catch {}
   }, [issues]);
 
@@ -396,7 +404,7 @@ export default function App() {
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-sky-500 to-cyan-400 p-0.5 flex items-center justify-center shadow-lg shadow-sky-500/20">
             <div className="w-full h-full bg-slate-900 rounded-[14px] flex items-center justify-center font-black text-sky-400 text-sm">
-              CP
+              PV
             </div>
           </div>
           <div>
@@ -499,7 +507,7 @@ export default function App() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gradient-to-r from-sky-500/20 to-cyan-500/20 border border-sky-500/30 text-sky-400 hover:bg-sky-500/30 text-xs font-bold transition cursor-pointer"
           >
             <Bot className="w-4 h-4" />
-            <span className="hidden sm:inline">Pulse AI</span>
+            <span className="hidden sm:inline">Praja Voice AI</span>
           </button>
         </div>
       </header>
@@ -612,18 +620,36 @@ export default function App() {
             {/* Live GPS Proximity Status & Sort Controls */}
             <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-md">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                  <Navigation className="w-4 h-4 animate-pulse" />
+                <div className={`w-8 h-8 rounded-xl border flex items-center justify-center shrink-0 ${
+                  isLiveGpsFix
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    : 'bg-sky-500/10 border-sky-500/20 text-sky-400'
+                }`}>
+                  <Navigation className={`w-4 h-4 ${isGpsTracking ? 'animate-pulse' : ''}`} />
                 </div>
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="text-xs font-bold text-white">Live Proximity Feed</span>
-                    <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      ±{userGpsAccuracy || 6}m GPS Accuracy
+                    <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded border ${
+                      isLiveGpsFix
+                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                        : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
+                    }`}>
+                      {isLiveGpsFix
+                        ? `GPS Locked • ±${userGpsAccuracy || 6}m`
+                        : isGpsLocating
+                        ? 'Acquiring GPS...'
+                        : 'Default City Center'}
                     </span>
                   </div>
                   <div className="text-[11px] text-slate-400">
-                    Sorted by nearest distance from your GPS ({userLat.toFixed(4)}, {userLng.toFixed(4)})
+                    {gpsError ? (
+                      <span className="text-amber-400">{gpsError}</span>
+                    ) : (
+                      <>
+                        {isLiveGpsFix ? 'Tracing live GPS' : 'GPS standby'} ({userLat.toFixed(5)}, {userLng.toFixed(5)})
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -679,10 +705,24 @@ export default function App() {
 
                 <button
                   type="button"
+                  onClick={toggleGpsTracking}
+                  className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer shrink-0 flex items-center gap-1.5 ${
+                    isGpsTracking
+                      ? 'bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border-emerald-500/40'
+                      : 'bg-sky-500 hover:bg-sky-400 text-white border-sky-400'
+                  }`}
+                  title={isGpsTracking ? 'Pause continuous GPS trace' : 'Activate continuous GPS trace'}
+                >
+                  <Crosshair className={`w-3.5 h-3.5 ${isGpsTracking ? 'animate-pulse' : ''}`} />
+                  <span>{isGpsTracking ? 'GPS Tracing ON' : 'Activate GPS'}</span>
+                </button>
+
+                <button
+                  type="button"
                   onClick={refreshUserGPS}
                   disabled={isGpsLocating}
                   className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition cursor-pointer shrink-0"
-                  title="Refresh GPS Coordinates"
+                  title="Refresh GPS Coordinates Now"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isGpsLocating ? 'animate-spin' : ''}`} />
                 </button>
@@ -754,6 +794,11 @@ export default function App() {
                   selectedStatus={statusFilter}
                   onSelectIssue={(i) => setSelectedIssue(i)}
                   userCoords={{ lat: userLat, lng: userLng }}
+                  userAccuracy={userGpsAccuracy}
+                  isGpsTracking={isGpsTracking}
+                  isLiveGpsFix={isLiveGpsFix}
+                  gpsTrail={gpsTrail}
+                  onActivateGPS={startGpsTracking}
                   focusedIssueId={focusedIssueId}
                   heightClass="h-[600px]"
                 />
@@ -800,6 +845,11 @@ export default function App() {
                       selectedStatus={statusFilter}
                       onSelectIssue={(i) => setSelectedIssue(i)}
                       userCoords={{ lat: userLat, lng: userLng }}
+                      userAccuracy={userGpsAccuracy}
+                      isGpsTracking={isGpsTracking}
+                      isLiveGpsFix={isLiveGpsFix}
+                      gpsTrail={gpsTrail}
+                      onActivateGPS={startGpsTracking}
                       focusedIssueId={focusedIssueId}
                       heightClass="h-[380px] sm:h-[440px]"
                     />
@@ -967,6 +1017,11 @@ export default function App() {
                     selectedStatus={statusFilter}
                     onSelectIssue={(i) => setSelectedIssue(i)}
                     userCoords={{ lat: userLat, lng: userLng }}
+                    userAccuracy={userGpsAccuracy}
+                    isGpsTracking={isGpsTracking}
+                    isLiveGpsFix={isLiveGpsFix}
+                    gpsTrail={gpsTrail}
+                    onActivateGPS={startGpsTracking}
                     focusedIssueId={focusedIssueId}
                     heightClass="h-[600px]"
                   />
@@ -1076,6 +1131,13 @@ export default function App() {
                 selectedCategory={categoryFilter}
                 selectedStatus={statusFilter}
                 onSelectIssue={(i) => setSelectedIssue(i)}
+                userCoords={{ lat: userLat, lng: userLng }}
+                userAccuracy={userGpsAccuracy}
+                isGpsTracking={isGpsTracking}
+                isLiveGpsFix={isLiveGpsFix}
+                gpsTrail={gpsTrail}
+                onActivateGPS={startGpsTracking}
+                heightClass="h-[600px]"
               />
             </div>
           </div>
@@ -1172,6 +1234,7 @@ export default function App() {
       {isReportFlowOpen && (
         <CitizenReportFlow
           existingIssues={issues}
+          initialCoords={isLiveGpsFix ? { lat: userLat, lng: userLng } : undefined}
           onSubmitIssue={handleAddNewIssue}
           onUpvoteExisting={handleUpvote}
           onCancel={() => setIsReportFlowOpen(false)}

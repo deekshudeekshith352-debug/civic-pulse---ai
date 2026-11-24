@@ -27,6 +27,7 @@ import { MiniLeafletMap } from './MiniLeafletMap';
 
 interface Props {
   existingIssues: CivicIssue[];
+  initialCoords?: { lat: number; lng: number };
   onSubmitIssue: (newIssue: CivicIssue) => void;
   onUpvoteExisting: (issueId: string) => void;
   onCancel: () => void;
@@ -34,6 +35,7 @@ interface Props {
 
 export const CitizenReportFlow: React.FC<Props> = ({
   existingIssues,
+  initialCoords,
   onSubmitIssue,
   onUpvoteExisting,
   onCancel,
@@ -63,10 +65,10 @@ export const CitizenReportFlow: React.FC<Props> = ({
   const [whatsappOptIn, setWhatsappOptIn] = useState(true);
 
   // High-precision GPS Location
-  const [coords, setCoords] = useState({ lat: 12.9716, lng: 77.6412 });
-  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(4);
+  const [coords, setCoords] = useState(initialCoords || { lat: 12.9716, lng: 77.6412 });
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
   const [isGpsLoading, setIsGpsLoading] = useState(false);
-  const [gpsLocked, setGpsLocked] = useState(true);
+  const [gpsLocked, setGpsLocked] = useState(Boolean(initialCoords));
   const [address, setAddress] = useState('80 Feet Rd, 12th Main, Indiranagar, Ward 12');
   const [ward, setWard] = useState('Ward 12');
 
@@ -87,13 +89,46 @@ export const CitizenReportFlow: React.FC<Props> = ({
       () => {
         setIsGpsLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 8000 }
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
   };
 
   useEffect(() => {
-    // Acquire live GPS on opening modal
-    acquireGPSLocation();
+    if (!navigator.geolocation) return;
+    setIsGpsLoading(true);
+    let lastGeocodedLat: number | null = null;
+    let lastGeocodedLng: number | null = null;
+
+    const watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const newCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCoords(newCoords);
+        setGpsAccuracy(Math.round(pos.coords.accuracy));
+        setGpsLocked(true);
+        setIsGpsLoading(false);
+
+        const movedEnough =
+          lastGeocodedLat === null ||
+          lastGeocodedLng === null ||
+          calculateDistanceMeters(lastGeocodedLat, lastGeocodedLng, newCoords.lat, newCoords.lng) >= 25;
+
+        if (movedEnough) {
+          lastGeocodedLat = newCoords.lat;
+          lastGeocodedLng = newCoords.lng;
+          const geo = await reverseGeocodeCoords(newCoords.lat, newCoords.lng);
+          setAddress(geo.address);
+          setWard(geo.ward);
+        }
+      },
+      () => {
+        setIsGpsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+    );
+
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
   }, []);
 
   // Duplicates found
@@ -250,7 +285,7 @@ export const CitizenReportFlow: React.FC<Props> = ({
       origin: { y: 0.6 },
     });
 
-    const newId = `CP-KA-${Math.floor(1000 + Math.random() * 9000)}`;
+    const newId = `PV-KA-${Math.floor(1000 + Math.random() * 9000)}`;
     const nowIso = new Date().toISOString();
     const slaHours = isEmergency ? 24 : severity >= 8 ? 36 : 48;
     const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000).toISOString();
@@ -287,7 +322,7 @@ export const CitizenReportFlow: React.FC<Props> = ({
       comments: [
         {
           id: `c-initial-${newId}`,
-          user: 'Civic Pulse AI',
+          user: 'Praja Voice AI',
           text: `Automated intake: Hazard severity rated ${severity}/10. Priority routing initiated for ${nodalAgency} (${suggestedDept}).`,
           timestamp: nowIso,
           isOfficial: true,
@@ -304,7 +339,7 @@ export const CitizenReportFlow: React.FC<Props> = ({
           status: 'Verified',
           timestamp: nowIso,
           note: `AI Vision analysis verified issue category (${category}). Auto-routed to ${nodalAgency}.`,
-          actor: 'Civic Pulse AI Inspector',
+          actor: 'Praja Voice AI Inspector',
         },
       ],
     };

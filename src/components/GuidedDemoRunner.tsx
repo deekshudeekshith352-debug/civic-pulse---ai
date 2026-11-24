@@ -91,7 +91,7 @@ export const GuidedDemoRunner: React.FC<Props> = ({
         comments: [
           {
             id: 'c-demo-1',
-            user: 'Civic Pulse AI',
+            user: 'Praja Voice AI',
             text: 'AI verified fix with 96% confidence score.',
             timestamp: new Date().toISOString(),
             isOfficial: true,
@@ -108,7 +108,7 @@ export const GuidedDemoRunner: React.FC<Props> = ({
             status: 'Verified',
             timestamp: new Date(Date.now() - 3.8 * 60 * 60 * 1000).toISOString(),
             note: 'AI rated Severity 8/10. Routed to Public Works.',
-            actor: 'Civic Pulse AI',
+            actor: 'Praja Voice AI',
           },
           {
             status: 'Assigned',

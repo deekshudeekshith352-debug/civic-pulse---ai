@@ -1,11 +1,11 @@
-# Civic Pulse AI - 3-Minute Hackathon Pitch Script 🎤⚡
+# Praja Voice AI - 3-Minute Hackathon Pitch Script 🎤⚡
 
 ---
 
 ## 📽️ Slide Outline
 
 - **Slide 1: Title & Hook**
-  - *Title*: Civic Pulse AI
+  - *Title*: Praja Voice AI
   - *Tagline*: Photo to Resolution in Under 30 Seconds
   - *Visual*: Broken street view split with clean asphalt fix & AI bounding box
 
@@ -13,7 +13,7 @@
   - *Citizen side*: "I tried reporting a broken manhole last year. It asked me for Ward Sub-division ID, Ward Engineer pin, and took 15 minutes. I gave up."
   - *City side*: 1,000 unverified complaints a week. 40% are duplicates, 30% have wrong addresses, and a live dangling electrical wire sits in the same queue as a small garden weed.
 
-- **Slide 3: The Civic Pulse AI Solution**
+- **Slide 3: The Praja Voice AI Solution**
   - 1 Tap, 1 Photo, 0 Friction.
   - Multi-modal Gemini 3.8 Flash Vision analyzes severity (1-10), size, hazards, and auto-routes to Public Works, Water Board, or Sanitation.
   - Duplicate detection: "3 people reported this already" -> 1-tap upvote boosts priority.
@@ -39,8 +39,8 @@
 > "Good morning, judges. Yesterday morning on my way here, I dodged a rim-bending pothole on 80 Feet Road. Two scooters were forced into oncoming traffic. Why didn't anyone report it? Because existing municipal apps make you feel like you're filing corporate taxes. You need to know your ward number, the engineer's circle, upload text paragraphs, and after 10 minutes... your report vanishes into a black hole.
 > On the other side, municipal dispatchers receive hundreds of messy, duplicate, unverified complaints. A life-threatening open sewer gets buried under three routine trash bags."
 
-> **[0:35 - 1:25] The Solution: Civic Pulse AI**
-> "This is **Civic Pulse AI**. We turn citizen photos into resolved civic issues in under 30 seconds.
+> **[0:35 - 1:25] The Solution: Praja Voice AI**
+> "This is **Praja Voice AI**. We turn citizen photos into resolved civic issues in under 30 seconds.
 > Let me show you our live app right now:
 > *[Show Camera screen]* A citizen simply taps the camera button and snaps a photo. That's it.
 > Immediately, Gemini 3.8 Flash Vision takes over:
@@ -61,6 +61,6 @@
 > The citizen confirms the fix, earns 100 Civic Points, unlocks the 'Pothole Patrol' badge, and can share their verified Citizen Impact Card."
 
 > **[2:45 - 3:00] Conclusion & Call to Action**
-> "Civic Pulse AI is mobile-first, offline-capable, supports 5 languages, and works for every grandmother with a phone camera. 
+> "Praja Voice AI is mobile-first, offline-capable, supports 5 languages, and works for every grandmother with a phone camera. 
 > We aren't just filing complaints — we are giving our cities a real-time, self-healing nervous system.
 > Thank you, and we welcome your questions!"

@@ -10,7 +10,7 @@ export const LANGUAGES: { code: SupportedLang; name: string; native: string }[] 
 
 export const TRANSLATIONS: Record<SupportedLang, Record<string, string>> = {
   en: {
-    appName: 'Civic Pulse India',
+    appName: 'Praja Voice AI',
     tagline: 'Photo to Resolution in Under 30 Seconds • BBMP / Nodal Dispatch',
     snapReport: 'Report Civic Issue',
     feed: 'Near Me',
@@ -18,7 +18,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<string, string>> = {
     dashboard: 'Nodal Officer Queue',
     transparency: 'Ward Health Index',
     leaderboard: 'Swachh Points & Impact',
-    assistant: 'AI Pulse Bot (Sahayak)',
+    assistant: 'Praja Voice AI Bot (Sahayak)',
     emergency: 'EMERGENCY HAZARD',
     emergencySub: 'Alerts BBMP, BESCOM & Police Dispatch instantly',
     tapCamera: 'Snap or Upload Photo',
@@ -61,7 +61,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<string, string>> = {
     currencySymbol: '₹',
   },
   hi: {
-    appName: 'सिविक पल्स इंडिया',
+    appName: 'प्रजा वॉइस AI',
     tagline: 'फोटो से समाधान 30 सेकंड में • नगर निगम त्वरित समाधान',
     snapReport: 'समस्या दर्ज करें',
     feed: 'मेरे वार्ड में',
@@ -112,7 +112,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<string, string>> = {
     currencySymbol: '₹',
   },
   kn: {
-    appName: 'ಸಿವಿಕ್ ಪಲ್ಸ್ ಇಂಡಿಯಾ',
+    appName: 'ಪ್ರಜಾ ವಾಯ್ಸ್ AI',
     tagline: '30 ಸೆಕೆಂಡುಗಳಲ್ಲಿ ಫೋಟೋದಿಂದ ಪರಿಹಾರ • ಬಿಬಿಎಂಪಿ / ನೋಡಲ್ ರವಾನೆ',
     snapReport: 'ಸಮಸ್ಯೆ ವರದಿ ಮಾಡಿ',
     feed: 'ನನ್ನ ವಾರ್ಡ್‌ನಲ್ಲಿ',
@@ -163,7 +163,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<string, string>> = {
     currencySymbol: '₹',
   },
   ta: {
-    appName: 'சிவிக் பல்ஸ் இந்தியா',
+    appName: 'பிரஜா வாய்ஸ் AI',
     tagline: '30 வினாடிகளில் புகைப்படத்திலிருந்து தீர்வு • மாநகராட்சி விரைவு சேவை',
     snapReport: 'புகார் பதிவு செய்',
     feed: 'என் வார்டில்',
@@ -214,7 +214,7 @@ export const TRANSLATIONS: Record<SupportedLang, Record<string, string>> = {
     currencySymbol: '₹',
   },
   te: {
-    appName: 'సివిక్ పల్స్ ఇండియా',
+    appName: 'ప్రజా వాయిస్ AI',
     tagline: '30 సెకన్లలో ఫోటోతో పరిష్కారం • మునిసిపల్ త్వరిత సేవ',
     snapReport: 'సమస్యను నివేదించండి',
     feed: 'నా వార్డులో',

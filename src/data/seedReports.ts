@@ -1505,7 +1505,7 @@ export function getInitialSeedReports(): CivicIssue[] {
         status: 'Verified' as const,
         timestamp: new Date(createdDate.getTime() + 15 * 60 * 1000).toISOString(),
         note: `AI Vision analysis validated hazard rating (Severity: ${item.sev}/10). Auto-routed to ${item.dept}.`,
-        actor: 'Civic Pulse AI Engine',
+        actor: 'Praja Voice AI Engine',
       });
     }
 

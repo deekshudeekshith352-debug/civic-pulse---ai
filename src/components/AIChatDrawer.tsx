@@ -21,7 +21,7 @@ export const AIChatDrawer: React.FC<Props> = ({ isOpen, onClose, issues, onSelec
     {
       id: 'm1',
       sender: 'assistant',
-      text: `Hello! I'm Pulse, your AI Civic Concierge. Ask me about active road repairs, water leaks, open issues in your ward, or report statuses!`,
+      text: `Hello! I'm Praja Voice AI (Sahayak), your AI Civic Concierge. Ask me about active road repairs, water leaks, open issues in your ward, or report statuses!`,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -112,7 +112,7 @@ export const AIChatDrawer: React.FC<Props> = ({ isOpen, onClose, issues, onSelec
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="font-bold text-sm">Pulse AI Assistant</h3>
+                <h3 className="font-bold text-sm">Praja Voice AI Assistant</h3>
                 <span className="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold">
                   LIVE
                 </span>

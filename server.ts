@@ -124,7 +124,7 @@ app.post('/api/analyze-issue', async (req: Request, res: Response) => {
       try {
         const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
-        const prompt = `You are the Civic Pulse India AI Inspector, an expert municipal civil engineer for Indian cities (BBMP, MCD, BMC, BESCOM, BWSSB).
+        const prompt = `You are the Praja Voice AI Inspector, an expert municipal civil engineer for Indian cities (BBMP, MCD, BMC, BESCOM, BWSSB).
 Analyze this citizen photo and optional complaint: "${userNotes || ''}".
 
 Examine:
@@ -215,7 +215,7 @@ app.post('/api/verify-fix', async (req: Request, res: Response) => {
     if (aiClient && afterImage) {
       try {
         const cleanAfter = afterImage.replace(/^data:image\/\w+;base64,/, '');
-        const prompt = `You are the Municipal Resolution Inspector for Civic Pulse.
+        const prompt = `You are the Municipal Resolution Inspector for Praja Voice AI.
 We have an reported civic issue: "${issueTitle || category}".
 Inspect this resolution/fix photo provided by the public works crew.
 
@@ -274,7 +274,7 @@ Evaluate:
         notes: `Repair verified for ${category || 'civic issue'}. Visual evidence shows complete clearance and asphalt/hardware restoration meeting municipal standards.`,
         remainingConcerns: 'No outstanding safety hazards detected. Suitable for citizen confirmation.',
       },
-      engine: 'civic-pulse-heuristic',
+      engine: 'praja-voice-heuristic',
     });
   } catch (error: any) {
     return res.status(500).json({ error: 'Failed to verify fix' });
@@ -289,7 +289,7 @@ app.post('/api/ai-chat', async (req: Request, res: Response) => {
 
     if (aiClient) {
       try {
-        const prompt = `You are "Sahayak (Pulse)", the official AI Civic Assistant for Civic Pulse India (supporting BBMP, BESCOM, BWSSB, and Indian Municipal Corporations).
+        const prompt = `You are "Sahayak", the official AI Civic Assistant for Praja Voice AI (supporting BBMP, BESCOM, BWSSB, and Indian Municipal Corporations).
 Citizens ask you about active road repairs, BWSSB Cauvery water leaks, BESCOM power issues, garbage blackspots (GVP), Ward Committee meetings, report statuses, and SLAs.
 Be helpful, empathetic, concise, and civic-minded in an Indian context. You can understand Hinglish, Kannada terms (e.g. rajakaluve, raste), and English.
 If referencing reports from the city context, mention their Ticket ID and status.
@@ -401,7 +401,7 @@ async function startServer() {
   }
 
   app.listen(PORT, () => {
-    console.log(`Civic Pulse AI server running on port ${PORT}`);
+    console.log(`Praja Voice AI server running on port ${PORT}`);
   });
 }
 

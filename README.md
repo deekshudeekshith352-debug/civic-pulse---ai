@@ -1,6 +1,6 @@
-# Civic Pulse AI 🏛️⚡
+# Praja Voice AI 🏛️⚡
 
-> **Photo to Resolution in Under 30 Seconds** — An AI-powered civic intelligence Progressive Web App (PWA) transforming blurry citizen complaints into prioritized, auto-routed municipal work orders with verified before/after resolution proof.
+> **Photo to Resolution in Under 30 Seconds** — An AI-powered civic intelligence Progressive Web App (PWA) transforming citizen complaints into prioritized, auto-routed municipal work orders with verified before/after resolution proof.
 
 ---
 
@@ -86,7 +86,7 @@
 │       ├── AuthorityDashboard.tsx    # Priority queue, Kanban, SLAs, Analytics
 │       ├── TransparencyPortal.tsx    # Ward health score & municipal rankings
 │       ├── LeaderboardAndImpact.tsx  # Badges, points, citizen impact card
-│       ├── AIChatDrawer.tsx          # "Pulse" natural language civic assistant
+│       ├── AIChatDrawer.tsx          # "Sahayak" natural language civic assistant
 │       ├── QRCodeModal.tsx           # On-site QR code ticket generator
 │       ├── GuidedDemoRunner.tsx      # 90-second guided hackathon scenario
 │       └── PWAInstallButton.tsx      # In-app install button with iOS guide
@@ -97,7 +97,7 @@
 ## ⚡ Tech Stack
 
 - **Frontend**: React 19, TypeScript, Tailwind CSS v4, Motion (Framer Motion)
-- **Map & Geo**: Leaflet 1.9, OpenStreetMap & CartoDB Voyager tiles, PostGIS queries
+- **Map & Geo**: Leaflet 1.9, OpenStreetMap standard tiles & Esri World Imagery, PostGIS queries
 - **AI Vision & Voice**: `@google/genai` (Gemini 3.8 Flash), Web Speech API
 - **Backend / API**: Express 4, tsx
 - **PWA**: `vite-plugin-pwa`, Service Worker asset caching, Offline queueing
@@ -125,7 +125,12 @@
    ```
    Open `http://localhost:3000` in your browser.
 
-4. **Run Seed Script (Optional)**:
+4. **Upload to GitHub**:
    ```bash
-   npx tsx scripts/seed-database.ts
+   git init
+   git add .
+   git commit -m "Initial commit: Praja Voice AI"
+   git branch -M main
+   git remote add origin https://github.com/<your-username>/praja-voice-ai.git
+   git push -u origin main
    ```
